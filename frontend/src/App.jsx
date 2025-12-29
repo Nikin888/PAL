@@ -4,7 +4,7 @@ import SummaryCard from "./components/SummaryCard.jsx";
 import PriceCard from "./components/PriceCard.jsx";
 
 //const API_BASE = "http://localhost:5000";
-const API_BASE = "https://pal-pxwn.onrender.com/";
+const API_BASE = "https://pal-pxwn.onrender.com";
 export default function App() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
