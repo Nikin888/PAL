@@ -6,29 +6,22 @@ const puppeteer = require("puppeteer");
 const app = express();
 
 /* ================================
-   ✅ CORS FIX (IMPORTANT)
+   ✅ CORS FIX (NO OPTIONS ROUTE)
    ================================ */
 app.use(cors({
   origin: "*",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"],
 }));
-
-// Explicitly handle preflight requests
-app.options("*", cors());
 
 app.use(express.json());
 
-/* ================================
-   ---- CLEAN QUERY ----
-   ================================ */
+/* ---- CLEAN QUERY ---- */
 function cleanQuery(query) {
   return query.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-/* ================================
-   ---- AMAZON SCRAPER ----
-   ================================ */
+/* ---- AMAZON SCRAPER ---- */
 async function scrapeAmazon(query) {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -61,9 +54,7 @@ async function scrapeAmazon(query) {
   return data ? { ...data, platform: "Amazon" } : null;
 }
 
-/* ================================
-   ---- FLIPKART SCRAPER ----
-   ================================ */
+/* ---- FLIPKART SCRAPER ---- */
 async function scrapeFlipkart(query) {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -99,9 +90,7 @@ async function scrapeFlipkart(query) {
   return data ? { ...data, platform: "Flipkart" } : null;
 }
 
-/* ================================
-   ---- DUMMY API FALLBACK ----
-   ================================ */
+/* ---- DUMMY API FALLBACK ---- */
 async function fetchDummyProducts(query) {
   const url = `https://dummyjson.com/products/search?q=${encodeURIComponent(query)}`;
   try {
@@ -112,9 +101,7 @@ async function fetchDummyProducts(query) {
   }
 }
 
-/* ================================
-   ---- MAIN ENDPOINT ----
-   ================================ */
+/* ---- MAIN ENDPOINT ---- */
 app.post("/api/price-compare", async (req, res) => {
   const query = req.body.query;
   const cleaned = cleanQuery(query);
@@ -157,11 +144,8 @@ app.post("/api/price-compare", async (req, res) => {
   }
 });
 
-/* ================================
-   ✅ RENDER LOOKS FOR THIS PORT
-   ================================ */
+/* ✅ Render PORT */
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
