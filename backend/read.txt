@@ -1,0 +1,2 @@
+backend : node server.js  
+npm run dev -- --host
