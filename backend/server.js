@@ -5,15 +5,30 @@ const puppeteer = require("puppeteer");
 
 const app = express();
 
-app.use(cors());
+/* ================================
+   ✅ CORS FIX (IMPORTANT)
+   ================================ */
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+// Explicitly handle preflight requests
+app.options("*", cors());
+
 app.use(express.json());
 
-// ---- CLEAN QUERY ----
+/* ================================
+   ---- CLEAN QUERY ----
+   ================================ */
 function cleanQuery(query) {
   return query.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-// ---- AMAZON SCRAPER ----
+/* ================================
+   ---- AMAZON SCRAPER ----
+   ================================ */
 async function scrapeAmazon(query) {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -32,8 +47,6 @@ async function scrapeAmazon(query) {
     const name = item.querySelector("h2 span")?.innerText;
     const img = item.querySelector("img")?.src;
     const priceText = item.querySelector(".a-price-whole")?.innerText;
-    
-    // NEW: extract product link
     const rawLink = item.querySelector("a.a-link-normal.s-no-outline")?.href;
 
     if (!priceText || !rawLink) return null;
@@ -48,7 +61,9 @@ async function scrapeAmazon(query) {
   return data ? { ...data, platform: "Amazon" } : null;
 }
 
-// ---- FLIPKART SCRAPER ----
+/* ================================
+   ---- FLIPKART SCRAPER ----
+   ================================ */
 async function scrapeFlipkart(query) {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -70,8 +85,6 @@ async function scrapeFlipkart(query) {
     const name = item.querySelector("._4rR01T")?.innerText;
     const img = item.querySelector("img")?.src;
     const priceText = item.querySelector("._30jeq3")?.innerText;
-
-    // NEW: product link
     const rawLink = item.querySelector("a")?.href;
 
     if (!priceText || !rawLink) return null;
@@ -85,7 +98,10 @@ async function scrapeFlipkart(query) {
   await browser.close();
   return data ? { ...data, platform: "Flipkart" } : null;
 }
-// ---- FREE API (DummyJSON fallback) ----
+
+/* ================================
+   ---- DUMMY API FALLBACK ----
+   ================================ */
 async function fetchDummyProducts(query) {
   const url = `https://dummyjson.com/products/search?q=${encodeURIComponent(query)}`;
   try {
@@ -96,13 +112,14 @@ async function fetchDummyProducts(query) {
   }
 }
 
-// ---- MAIN ENDPOINT ----
+/* ================================
+   ---- MAIN ENDPOINT ----
+   ================================ */
 app.post("/api/price-compare", async (req, res) => {
   const query = req.body.query;
   const cleaned = cleanQuery(query);
 
   try {
-    // 🔍 Try REAL SCRAPERS first
     const [amazon, flipkart] = await Promise.allSettled([
       scrapeAmazon(cleaned),
       scrapeFlipkart(cleaned)
@@ -113,7 +130,6 @@ app.post("/api/price-compare", async (req, res) => {
     if (amazon.value) results.push(amazon.value);
     if (flipkart.value) results.push(flipkart.value);
 
-    // If both failed, fallback to DummyJSON
     if (!results.length) {
       const dummy = await fetchDummyProducts(cleaned);
 
@@ -141,6 +157,9 @@ app.post("/api/price-compare", async (req, res) => {
   }
 });
 
+/* ================================
+   ✅ RENDER LOOKS FOR THIS PORT
+   ================================ */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
